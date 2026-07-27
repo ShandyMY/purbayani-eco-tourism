@@ -3,7 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, RotateCw } from 'lucide-react';
 
-export default function PanoramaViewer() {
+interface PanoramaViewerProps {
+  imageSrc?: string;
+  title?: string;
+}
+
+export default function PanoramaViewer({
+  imageSrc = '/panorama/pantai-360.jpg',
+  title = 'Virtual Tour 360°',
+}: PanoramaViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isActivated, setIsActivated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,9 +31,8 @@ export default function PanoramaViewer() {
         if (containerRef.current) {
           viewerInstance = new Viewer({
             container: containerRef.current,
-            // Menunjuk langsung ke folder public/panorama/pantai-360.jpg
-            panorama: '/panorama/pantai-360.jpg',
-            caption: 'Pantai Purbayani Garut - Virtual Tour 360°',
+            panorama: imageSrc,
+            caption: `${title} - Virtual Tour 360°`,
             loadingTxt: 'Menyiapkan pemandangan virtual...',
             defaultZoomLvl: 30,
             touchmoveTwoFingers: true,
@@ -46,24 +53,28 @@ export default function PanoramaViewer() {
         viewerInstance.destroy();
       }
     };
-  }, [isActivated]);
+  }, [isActivated, imageSrc, title]);
 
   if (!isActivated) {
     return (
       <div className="w-full">
-        {/* Placeholder dengan background dari /panorama/pantai-360.jpg */}
-        <div 
+        {/* Placeholder dengan background dinamis */}
+        <div
           className="w-full h-[400px] sm:h-[450px] rounded-2xl overflow-hidden relative flex flex-col items-center justify-center bg-cover bg-center border border-slate-200 shadow-md group cursor-pointer"
-          style={{ 
-            backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url('/panorama/pantai-360.jpg')"
+          style={{
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url('${imageSrc}')`,
           }}
           onClick={() => setIsActivated(true)}
         >
           <div className="bg-teal-500 text-white p-4 rounded-full shadow-lg group-hover:scale-110 transition duration-300">
             <Play className="w-6 h-6 fill-white translate-x-0.5" />
           </div>
-          <h4 className="text-white font-semibold text-lg mt-4 px-4 text-center">Mulai Wisata Virtual 360°</h4>
-          <p className="text-slate-300 text-xs mt-1 px-4 text-center">Klik untuk memuat penjelajah interaktif tanpa membebani halaman</p>
+          <h4 className="text-white font-semibold text-lg mt-4 px-4 text-center">
+            Mulai Wisata Virtual 360°
+          </h4>
+          <p className="text-slate-300 text-xs mt-1 px-4 text-center">
+            Klik untuk memuat penjelajah interaktif tanpa membebani halaman
+          </p>
         </div>
       </div>
     );
@@ -77,8 +88,8 @@ export default function PanoramaViewer() {
           <p className="text-sm text-slate-300">Memuat modul 360°...</p>
         </div>
       )}
-      <div 
-        ref={containerRef} 
+      <div
+        ref={containerRef}
         className="w-full h-[400px] sm:h-[450px] rounded-2xl overflow-hidden shadow-inner bg-slate-900 border border-slate-200"
       />
       <p className="text-center text-xs text-slate-400 mt-3 italic">

@@ -1,14 +1,9 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import Navbar from '@/components/UI/Navbar';
-import Footer from '@/components/UI/Footer';
+import Navbar from '@/components/ui/Navbar';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
-export const metadata: Metadata = {
-  title: 'Portal Desa Smart Eco-Tourism Purbayani Garut',
-  description: 'Portal sistem informasi geografis (GIS) pemetaan potensi, direktori wisata, dan tur virtual 360 derajat Desa Purbayani, Garut.',
+export const metadata = {
+  title: 'Desa Purbayani',
+  description: 'Website Resmi Desa Purbayani',
 };
 
 export default function RootLayout({
@@ -18,10 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id">
-      <body className={inter.className}>
+      <body>
         <Navbar />
         {children}
-        <Footer />
       </body>
     </html>
   );

@@ -1,71 +1,76 @@
-'use client';
+import { ShieldCheck, Target, Users, MapPin, Award, Trees } from 'lucide-react';
 
-import { Users, Landmark, Heart, Eye } from 'lucide-react';
-
-export default function ProfilPage() {
+export default function ProfilPublicPage() {
   return (
-    <div className="min-h-screen bg-slate-50 pt-32 pb-24">
-      <div className="max-w-4xl mx-auto px-6">
-        
-        {/* Header Profil */}
-        <div className="text-center mb-16">
-          <span className="text-teal-600 text-xs font-extrabold uppercase tracking-widest block mb-1">Informasi Publik</span>
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Profil Desa Purbayani</h1>
-          <p className="text-slate-500 text-sm md:text-base mt-2">Mengenal lebih dekat tata kelola, sejarah, dan nilai sosial Desa Purbayani.</p>
-        </div>
-
-        {/* 1. SEJARAH */}
-        <div className="bg-white rounded-3xl p-8 md:p-10 border border-slate-100 shadow-sm mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2 mb-4">
-            <Landmark className="w-6 h-6 text-teal-600" /> Sejarah Singkat
-          </h2>
-          <p className="text-slate-600 text-sm leading-relaxed font-light">
-            Desa Purbayani merupakan salah satu wilayah administratif di pesisir Garut Selatan yang kaya akan potensi kelautan dan kehutanan adat. Sejak pembentukannya, desa ini menjunjung tinggi integrasi harmonis antara konservasi alam dan kemandirian ekonomi, menjadikannya salah satu motor utama pemeliharaan ekosistem mangrove di Jawa Barat.
+    <div className="min-h-screen bg-slate-50/50 pb-24">
+      {/* Hero Header */}
+      <div className="relative bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-900 text-white pt-32 pb-20 px-6 overflow-hidden">
+        <div className="max-w-5xl mx-auto text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold uppercase tracking-wider">
+            <Trees className="w-4 h-4" /> Profil & Identitas
+          </div>
+          <h1 className="text-3xl md:text-5xl font-black">Mengenal Desa <span className="text-emerald-400">Purbayani</span></h1>
+          <p className="text-slate-300 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+            Mewujudkan Desa Purbayani yang Mandiri, Sejahtera, Berkelanjutan, dan Berbasis Teknologi Informasi melalui Smart Eco-Tourism.
           </p>
         </div>
+      </div>
 
-        {/* 2. VISI & MISI */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
-            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-3">
-              <Eye className="w-5 h-5 text-teal-600" /> Visi Desa
-            </h3>
-            <p className="text-slate-600 text-sm leading-relaxed font-light">
-              "Mewujudkan Desa Purbayani Mandiri yang Sejahtera berbasis Smart Eco-Tourism, Kelestarian Lingkungan, dan Kemandirian Ekonomi Kerakyatan pada Tahun 2030."
-            </p>
+      <div className="max-w-5xl mx-auto px-6 -mt-8 relative z-20 space-y-10">
+        {/* Visi & Misi Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="bg-gradient-to-br from-emerald-700 to-emerald-800 text-white p-8 rounded-3xl shadow-lg space-y-4 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                <Target className="w-6 h-6 text-emerald-300" />
+              </div>
+              <h2 className="text-2xl font-black">Visi Desa</h2>
+              <p className="text-emerald-50 text-sm leading-relaxed italic">
+                &ldquo;Terwujudnya Desa Purbayani yang agrowisata, mandiri secara ekonomi, berdaya saing tinggi, serta lestari dalam pelestarian lingkungan dan kearifan lokal.&rdquo;
+              </p>
+            </div>
           </div>
-          <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
-            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-3">
-              <Heart className="w-5 h-5 text-teal-600" /> Misi Utama
-            </h3>
-            <ul className="text-slate-600 text-sm leading-relaxed font-light list-disc pl-4 space-y-1">
-              <li>Membangun infrastruktur desa digital yang ramah lingkungan.</li>
-              <li>Memberdayakan UMKM pesisir melalui teknologi tepat guna.</li>
-              <li>Mengembangkan kawasan pariwisata berkelanjutan berbasis komunitas (CBT).</li>
+
+          <div className="bg-white border border-slate-100 p-8 rounded-3xl shadow-sm space-y-4">
+            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6 text-emerald-600" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900">Misi Utama</h2>
+            <ul className="text-slate-600 text-xs md:text-sm space-y-2.5 list-disc list-inside leading-relaxed">
+              <li>Meningkatkan tata kelola pemerintahan desa yang transparan dan akuntabel.</li>
+              <li>Mengembangkan potensi pariwisata berbasis *Eco-Tourism* dan partisipasi warga.</li>
+              <li>Mendorong pemberdayaan UMKM lokal melalui digitalisasi ekonomi.</li>
+              <li>Menjaga kelestarian sumber daya alam dan kualitas lingkungan hidup.</li>
             </ul>
           </div>
         </div>
 
-        {/* 3. DEMOGRAFI */}
-        <div className="bg-white rounded-3xl p-8 md:p-10 border border-slate-100 shadow-sm mb-8 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center justify-center gap-2 mb-6">
-            <Users className="w-6 h-6 text-teal-600" /> Statistik Kependudukan
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { total: '3.450+', label: 'Total Penduduk' },
-              { total: '1.120', label: 'Kepala Keluarga' },
-              { total: '450 Ha', label: 'Luas Wilayah' },
-              { total: '65%', label: 'Mata Pencaharian Nelayan' }
-            ].map((stat, idx) => (
-              <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <span className="block text-xl md:text-2xl font-black text-teal-600">{stat.total}</span>
-                <span className="block text-[11px] font-bold text-slate-400 mt-1 uppercase">{stat.label}</span>
-              </div>
-            ))}
+        {/* Demografi & Statistik Ringkas */}
+        <div className="bg-white border border-slate-100 p-8 rounded-3xl shadow-sm space-y-6">
+          <h2 className="text-xl font-extrabold text-slate-900 border-b border-slate-100 pb-4">Gambaran Umum Wilayah</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div className="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+              <Users className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+              <div className="text-2xl font-black text-slate-900">± 4.500</div>
+              <div className="text-[11px] text-slate-500 font-medium mt-0.5">Jumlah Penduduk</div>
+            </div>
+            <div className="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+              <MapPin className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+              <div className="text-2xl font-black text-slate-900">12.5 km²</div>
+              <div className="text-[11px] text-slate-500 font-medium mt-0.5">Luas Wilayah</div>
+            </div>
+            <div className="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+              <Award className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+              <div className="text-2xl font-black text-slate-900">4 Dusun</div>
+              <div className="text-[11px] text-slate-500 font-medium mt-0.5">Wilayah Administratif</div>
+            </div>
+            <div className="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+              <Trees className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+              <div className="text-2xl font-black text-slate-900">Eco-Village</div>
+              <div className="text-[11px] text-slate-500 font-medium mt-0.5">Fokus Pembangunan</div>
+            </div>
           </div>
         </div>
-
       </div>
     </div>
   );

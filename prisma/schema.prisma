@@ -1,0 +1,91 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model WaSession {
+  id                String   @id @default(uuid())
+  phone             String   @unique
+  step              String   @default("IDLE")
+  
+  // Temp Data Berita
+  tempTitle         String?
+  tempIsi           String?
+  
+  // Temp Data UMKM
+  tempUmkmNama      String?
+  tempUmkmKategori  String?
+  tempUmkmDeskripsi String?
+  tempUmkmKontak    String?
+  tempUmkmLat       String?
+  tempUmkmLng       String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Berita {
+  id        String   @id @default(uuid())
+  judul     String
+  slug      String   @unique
+  kategori  String
+  ringkasan String
+  isi       String
+  gambar    String?
+  tanggal   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Umkm {
+  id        String   @id @default(cuid())
+  nama      String
+  kategori  String
+  deskripsi String?
+  kontak    String?
+  latitude  Float?
+  longitude Float?
+  gambar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Wisata {
+  id             String   @id @default(cuid())
+  nama           String
+  kategori       String
+  deskripsi      String
+  lokasi         String?
+  hargaTiket     String?
+  jamOperasional String?
+  virtualTourUrl String?  // Field tambahan untuk URL 360°
+  latitude       Float?
+  longitude      Float?
+  gambar         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Fasilitas {
+  id             String   @id @default(uuid())
+  nama           String
+  deskripsi      String
+  kategori       String?
+  alamat         String?
+  kontak         String?
+  jamOperasional String?
+  gambar         String?
+  latitude       Float?
+  longitude      Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model User {
+  id       String @id @default(uuid())
+  username String @unique
+  password String
+}

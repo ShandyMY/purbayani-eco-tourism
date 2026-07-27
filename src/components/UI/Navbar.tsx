@@ -9,6 +9,11 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
+  // Sembunyikan Navbar publik di seluruh area admin
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   const menuItems = [
     { name: 'Beranda', href: '/' },
     { name: 'Profil Desa', href: '/profil' },
@@ -60,7 +65,7 @@ export default function Navbar() {
             );
           })}
           
-          {/* Perbaikan tombol Peta Digital */}
+          {/* Tombol Peta Digital */}
           <Link 
             href="/#peta" 
             onClick={handleScrollToPeta}
