@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import UmkmFormClient from '../../[id]/UmkmFormClient'; // Sesuaikan path ini jika berbeda
+import UmkmFormClient from '../../[id]/UmkmFormClient';
 import { updateUmkm } from '@/app/admin/actions';
 
 export const revalidate = 0;
@@ -42,7 +42,6 @@ export default async function EditUmkmPage({ params }: EditUmkmPageProps) {
         </div>
       </div>
 
-      {/* Gunakan prop 'umkm' dan 'formAction' sesuai dengan definisi di UmkmFormClient */}
       <UmkmFormClient umkm={umkm} formAction={updateActionWithId} />
     </div>
   );

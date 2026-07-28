@@ -77,7 +77,6 @@ export default function UmkmFormClient({
   return (
     <form
       action={formAction}
-      encType="multipart/form-data"
       className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5"
     >
       {umkm?.id && <input type="hidden" name="id" value={umkm.id} />}

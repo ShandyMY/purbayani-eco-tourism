@@ -53,7 +53,7 @@ export async function createUmkm(formData: FormData) {
     const latRaw = formData.get('latitude') as string;
     const lngRaw = formData.get('longitude') as string;
     const deskripsi = formData.get('deskripsi') as string;
-    const gambarFile = formData.get('gambarFile') as File | null;
+    const gambarFile = formData.get('gambar') as File | null;
 
     const gambarUrl = await saveUploadedFile(gambarFile);
 
@@ -99,18 +99,23 @@ export async function createOrUpdateUmkm(prevState: any, formData: FormData) {
     const lngRaw = formData.get('longitude') as string;
     const deskripsi = formData.get('deskripsi') as string;
     
-    const gambarFile = formData.get('gambarFile') as File | null;
-    const oldGambarUrl = formData.get('gambar') as string;
+    const gambarFile = formData.get('gambar') as File | null;
 
     const latitude = latRaw ? parseFloat(latRaw) : null;
     const longitude = lngRaw ? parseFloat(lngRaw) : null;
 
-    let gambarUrl = await saveUploadedFile(gambarFile);
-    if (!gambarUrl) {
-      gambarUrl = oldGambarUrl || null;
+    const umkmModel = (prisma as any).umkm || (prisma as any).UMKM || (prisma as any).Umkm;
+
+    let gambarUrl = null;
+    if (id) {
+      const existing = await umkmModel.findUnique({ where: { id } });
+      gambarUrl = existing?.gambar || null;
     }
 
-    const umkmModel = (prisma as any).umkm || (prisma as any).UMKM || (prisma as any).Umkm;
+    const newGambarUrl = await saveUploadedFile(gambarFile);
+    if (newGambarUrl) {
+      gambarUrl = newGambarUrl;
+    }
 
     if (id) {
       await umkmModel.update({
@@ -343,7 +348,7 @@ export async function createFasilitas(formData: FormData) {
     const kategori = formData.get('kategori') as string;
     const alamat = formData.get('alamat') as string;
     const kontak = formData.get('kontak') as string;
-    const jamOperasional = formData.get('jam_operasional') as string; // Diubah jadi jamOperasional
+    const jamOperasional = formData.get('jam_operasional') as string;
     const deskripsi = formData.get('deskripsi') as string;
     
     const rawLat = formData.get('latitude') as string;
@@ -351,7 +356,6 @@ export async function createFasilitas(formData: FormData) {
     const latitude = rawLat ? parseFloat(rawLat) : null;
     const longitude = rawLng ? parseFloat(rawLng) : null;
 
-    // Handle Upload Gambar
     const file = formData.get('gambar') as File;
     let gambarPath = null;
 
@@ -373,7 +377,7 @@ export async function createFasilitas(formData: FormData) {
         kategori,
         alamat,
         kontak,
-        jamOperasional, // Sesuai skema Prisma
+        jamOperasional,
         gambar: gambarPath,
         deskripsi,
         latitude,
@@ -396,7 +400,7 @@ export async function updateFasilitas(formData: FormData) {
     const kategori = formData.get('kategori') as string;
     const alamat = formData.get('alamat') as string;
     const kontak = formData.get('kontak') as string;
-    const jamOperasional = formData.get('jam_operasional') as string; // Diubah jadi jamOperasional
+    const jamOperasional = formData.get('jam_operasional') as string;
     const deskripsi = formData.get('deskripsi') as string;
     
     const rawLat = formData.get('latitude') as string;
@@ -427,7 +431,7 @@ export async function updateFasilitas(formData: FormData) {
         kategori,
         alamat,
         kontak,
-        jamOperasional, // Sesuai skema Prisma
+        jamOperasional,
         gambar: gambarPath,
         deskripsi,
         latitude,
@@ -457,7 +461,6 @@ export async function deleteFasilitas(id: string) {
   }
 }
 
-// Helper membuat slug otomatis dari judul
 function generateSlug(text: string) {
   return text
     .toLowerCase()
@@ -477,7 +480,6 @@ export async function createBerita(formData: FormData) {
     
     const slug = generateSlug(judul) + '-' + Date.now().toString().slice(-4);
 
-    // Handle Upload File Gambar
     const file = formData.get('gambar') as File;
     let gambarPath = null;
 
@@ -501,7 +503,7 @@ export async function createBerita(formData: FormData) {
         ringkasan,
         isi,
         gambar: gambarPath,
-        tanggal: tanggalStr, // Menggunakan string tanggal
+        tanggal: tanggalStr,
       },
     });
 
@@ -520,7 +522,7 @@ export async function updateBerita(formData: FormData) {
     const kategori = formData.get('kategori') as string;
     const ringkasan = formData.get('ringkasan') as string;
     const isi = formData.get('isi') as string;
-    const tanggalStr = formData.get('tanggal') as string; // Diambil sebagai string
+    const tanggalStr = formData.get('tanggal') as string;
 
     const existing = await prisma.berita.findUnique({ where: { id } });
     let gambarPath = existing?.gambar || null;
@@ -546,7 +548,7 @@ export async function updateBerita(formData: FormData) {
         ringkasan,
         isi,
         gambar: gambarPath,
-        tanggal: tanggalStr, // Menggunakan variabel tanggalStr yang berupa string
+        tanggal: tanggalStr,
       },
     });
 
@@ -577,23 +579,20 @@ export async function loginAdmin(formData: FormData) {
   const username = formData.get('username') as string;
   const password = formData.get('password') as string;
 
-  // Cek ke database apakah user ada
   const user = await prisma.user.findUnique({
     where: { username },
   });
 
-  // Validasi sederhana (Ganti dengan bcrypt.compare jika password di-hash)
   if (!user || user.password !== password) {
     return { error: 'Username atau password salah!' };
   }
 
-  // Jika benar, buat cookie sesi penanda bahwa user sudah login
   (await cookies()).set({
     name: 'admin_session',
     value: 'authenticated_true',
     httpOnly: true,
     path: '/',
-    maxAge: 60 * 60 * 24, // 1 hari
+    maxAge: 60 * 60 * 24,
   });
 
   redirect('/admin/berita');
