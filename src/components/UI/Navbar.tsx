@@ -1,117 +1,212 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { MouseEvent } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Palmtree } from 'lucide-react';
+import {
+  Menu,
+  X,
+  Leaf,
+  MapPin,
+  ChevronRight,
+} from 'lucide-react';
+
+const menuItems = [
+  { name: 'Beranda', href: '/' },
+  { name: 'Profil Desa', href: '/profil' },
+  { name: 'Wisata', href: '/wisata' },
+  { name: 'UMKM', href: '/umkm' },
+  { name: 'Fasilitas', href: '/fasilitas' },
+  { name: 'Kabar Desa', href: '/berita' },
+];
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
-  // Sembunyikan Navbar publik di seluruh area admin
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  // Tutup menu mobile dengan tombol Esc.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Navbar publik tidak ditampilkan di area admin.
   if (pathname?.startsWith('/admin')) {
     return null;
   }
 
-  const menuItems = [
-    { name: 'Beranda', href: '/' },
-    { name: 'Profil Desa', href: '/profil' },
-    { name: 'Direktori Wisata', href: '/wisata' },
-    { name: 'Direktori UMKM', href: '/umkm' },
-    { name: 'Fasilitas & Usaha', href: '/fasilitas' },
-    { name: 'Kabar Desa', href: '/berita' },
-  ];
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname?.startsWith(`${href}/`);
+  };
 
-  // Handler scroll mulus ke anchor target
-  const handleScrollToPeta = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+  const handleMapClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    setIsOpen(false);
+
     if (pathname === '/') {
-      e.preventDefault();
       const target = document.getElementById('peta');
+
       if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        e.preventDefault();
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+
+        window.history.replaceState(null, '', '/#peta');
       }
-      setIsOpen(false);
     }
   };
 
   return (
-    <nav className="fixed w-full top-0 left-0 z-[1000] bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="bg-teal-600 text-white p-2 rounded-xl">
-            <Palmtree className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="font-extrabold text-slate-900 tracking-tight block">PURBAYANI</span>
-            <span className="text-[10px] text-teal-600 font-bold block -mt-1 tracking-wider uppercase">Garut Selatan</span>
-          </div>
-        </Link>
-
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8">
-          {menuItems.map((item, idx) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link 
-                key={idx} 
-                href={item.href} 
-                className={`text-sm font-semibold transition ${
-                  isActive ? 'text-teal-600' : 'text-slate-600 hover:text-teal-600'
-                }`}
-              >
-                {item.name}
-              </Link>
-            );
-          })}
-          
-          {/* Tombol Peta Digital */}
-          <Link 
-            href="/#peta" 
-            onClick={handleScrollToPeta}
-            className="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-5 py-2.5 rounded-full shadow-md transition"
+    <header className="fixed inset-x-0 top-0 z-[1000] px-3 pt-3 sm:px-5">
+      <nav
+        aria-label="Navigasi utama"
+        className={`mx-auto max-w-[1360px] rounded-full border transition-all duration-300 ${
+          scrolled
+            ? 'border-emerald-950/10 bg-[#f7f8f4]/95 shadow-lg shadow-emerald-950/10 backdrop-blur-xl'
+            : 'border-white/25 bg-[#f7f8f4]/85 shadow-md shadow-emerald-950/5 backdrop-blur-xl'
+        } ${isOpen ? 'xl:rounded-full max-xl:rounded-3xl' : ''}`}
+      >
+        <div className="flex h-16 items-center justify-between gap-4 pl-3 pr-3 sm:pl-4 lg:pr-4">
+          {/* BRAND */}
+          <Link
+            href="/"
+            className="group flex shrink-0 items-center gap-3"
+            aria-label="Purbayani Eco Tourism - Beranda"
           >
-            Peta Digital
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0b2e28] text-emerald-300 transition duration-300 group-hover:bg-[#10574a]">
+              <Leaf className="h-5 w-5 transition-transform duration-300 group-hover:-rotate-12" />
+            </div>
+
+            <div className="leading-none">
+              <span className="block text-base font-bold tracking-[0.14em] text-[#0f3329]">
+                PURBAYANI
+              </span>
+              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.22em] text-emerald-800">
+                Eco Tourism · Garut
+              </span>
+            </div>
           </Link>
-        </div>
 
-        {/* Mobile Toggle */}
-        <button className="md:hidden text-slate-800" onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
+          {/* DESKTOP MENU */}
+          <div className="hidden items-center gap-0.5 xl:flex">
+            {menuItems.map((item) => {
+              const active = isActive(item.href);
 
-      {/* Mobile Drawer */}
-      {isOpen && (
-        <div className="md:hidden bg-white/95 backdrop-blur-lg border-b border-slate-100 py-6 px-6 absolute w-full left-0 shadow-xl">
-          <div className="flex flex-col gap-4">
-            {menuItems.map((item, idx) => {
-              const isActive = pathname === item.href;
               return (
-                <Link 
-                  key={idx} 
-                  href={item.href} 
-                  onClick={() => setIsOpen(false)}
-                  className={`text-base font-bold transition ${
-                    isActive ? 'text-teal-600' : 'text-slate-700 hover:text-teal-600'
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`rounded-full px-3.5 py-2.5 text-[13px] font-semibold transition-colors duration-200 ${
+                    active
+                      ? 'bg-[#0b2e28] text-emerald-200'
+                      : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-900'
                   }`}
                 >
                   {item.name}
                 </Link>
               );
             })}
-            
-            {/* Tombol Peta di Mobile */}
-            <Link 
-              href="/#peta" 
-              onClick={handleScrollToPeta}
-              className="bg-teal-600 text-white text-center py-3 rounded-xl font-bold mt-2"
+          </div>
+
+          {/* MAP CTA */}
+          <div className="hidden xl:block">
+            <Link
+              href="/#peta"
+              onClick={handleMapClick}
+              className="group inline-flex h-10 items-center gap-2 rounded-full bg-emerald-300 px-5 text-sm font-bold text-emerald-950 transition duration-300 hover:bg-emerald-200"
             >
-              Peta Digital
+              <MapPin className="h-4 w-4" />
+              <span>Peta Digital</span>
+              <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
+
+          {/* MOBILE TOGGLE */}
+          <button
+            type="button"
+            aria-label={isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            aria-expanded={isOpen}
+            aria-controls="mobile-navigation"
+            onClick={() => setIsOpen((current) => !current)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-950/10 bg-white text-emerald-900 transition hover:bg-emerald-50 xl:hidden"
+          >
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
-      )}
-    </nav>
+
+        {/* TABLET + MOBILE MENU */}
+        {isOpen && (
+          <div
+            id="mobile-navigation"
+            className="border-t border-emerald-950/10 px-4 pb-5 pt-3 sm:px-6 xl:hidden"
+          >
+            <div className="mb-3 rounded-2xl bg-emerald-50 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-800">
+                Jelajahi Purbayani
+              </p>
+              <p className="mt-1 font-serif text-lg text-[#0f3329]">
+                Alam, budaya, dan cerita lokal.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+              {menuItems.map((item) => {
+                const active = isActive(item.href);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    onClick={() => setIsOpen(false)}
+                    className={`flex min-h-12 items-center justify-between rounded-full px-5 text-sm font-semibold transition ${
+                      active
+                        ? 'bg-[#0b2e28] text-emerald-200'
+                        : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-900'
+                    }`}
+                  >
+                    {item.name}
+                    <ChevronRight className="h-4 w-4 opacity-60" />
+                  </Link>
+                );
+              })}
+            </div>
+
+            <Link
+              href="/#peta"
+              onClick={handleMapClick}
+              className="mt-3 flex min-h-12 items-center justify-center gap-2 rounded-full bg-emerald-300 px-4 text-sm font-bold text-emerald-950 transition hover:bg-emerald-200"
+            >
+              <MapPin className="h-4 w-4" />
+              Buka Peta Digital
+            </Link>
+          </div>
+        )}
+      </nav>
+    </header>
   );
 }

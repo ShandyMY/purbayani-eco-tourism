@@ -470,26 +470,50 @@ function generateSlug(text: string) {
 
 // --- CRUD BERITA ---
 
+
 export async function createBerita(formData: FormData) {
   try {
-    const judul = formData.get('judul') as string;
-    const kategori = formData.get('kategori') as string;
-    const ringkasan = formData.get('ringkasan') as string;
-    const isi = formData.get('isi') as string;
-    const tanggalStr = formData.get('tanggal') as string;
-    
-    const slug = generateSlug(judul) + '-' + Date.now().toString().slice(-4);
+    const judul = String(formData.get('judul') ?? '').trim();
+    const kategori = String(formData.get('kategori') ?? '').trim();
+    const ringkasan = String(formData.get('ringkasan') ?? '').trim();
+    const isi = String(formData.get('isi') ?? '').trim();
+    const tanggalStr = String(formData.get('tanggal') ?? '').trim();
 
-    const file = formData.get('gambar') as File;
-    let gambarPath = null;
+    if (!judul || !kategori || !isi || !tanggalStr) {
+      return { error: 'Judul, kategori, isi, dan tanggal wajib diisi.' };
+    }
+
+    // Validasi format tanggal YYYY-MM-DD
+    const tanggalValid =
+      /^\d{4}-\d{2}-\d{2}$/.test(tanggalStr) &&
+      !Number.isNaN(Date.parse(`${tanggalStr}T00:00:00`));
+
+    if (!tanggalValid) {
+      return { error: 'Format tanggal tidak valid.' };
+    }
+
+    const slug =
+      generateSlug(judul) + '-' + Date.now().toString().slice(-4);
+
+    const file = formData.get('gambar') as File | null;
+    let gambarPath: string | null = null;
 
     if (file && file.size > 0 && file.name !== 'undefined') {
+      if (!file.type.startsWith('image/')) {
+        return { error: 'File yang diunggah harus berupa gambar.' };
+      }
+
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const filename = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-      const uploadDir = path.join(process.cwd(), 'public/uploads/berita');
-      
+      const filename = `${Date.now()}-${file.name.replace(/[^\w.-]/g, '_')}`;
+      const uploadDir = path.join(
+        process.cwd(),
+        'public',
+        'uploads',
+        'berita'
+      );
+
       await mkdir(uploadDir, { recursive: true });
       await writeFile(path.join(uploadDir, filename), buffer);
       gambarPath = `/uploads/berita/${filename}`;
@@ -500,7 +524,7 @@ export async function createBerita(formData: FormData) {
         judul,
         slug,
         kategori,
-        ringkasan,
+        ringkasan: ringkasan || '',
         isi,
         gambar: gambarPath,
         tanggal: tanggalStr,
@@ -508,12 +532,15 @@ export async function createBerita(formData: FormData) {
     });
 
     revalidatePath('/admin/berita');
+    revalidatePath('/berita');
+
     return { success: true };
   } catch (error) {
     console.error('Gagal membuat berita:', error);
     return { error: 'Gagal menyimpan data berita ke database.' };
   }
 }
+
 
 export async function updateBerita(formData: FormData) {
   try {
@@ -553,6 +580,7 @@ export async function updateBerita(formData: FormData) {
     });
 
     revalidatePath('/admin/berita');
+    revalidatePath('/berita');
     return { success: true };
   } catch (error) {
     console.error('Gagal memperbarui berita:', error);
@@ -567,6 +595,7 @@ export async function deleteBerita(id: string) {
     });
 
     revalidatePath('/admin/berita');
+    revalidatePath('/berita');
     return { success: true };
   } catch (error) {
     console.error('Gagal menghapus berita:', error);
@@ -595,7 +624,7 @@ export async function loginAdmin(formData: FormData) {
     maxAge: 60 * 60 * 24,
   });
 
-  redirect('/admin/berita');
+  redirect('/admin');
 }
 
 // --- LOGOUT ADMIN ---

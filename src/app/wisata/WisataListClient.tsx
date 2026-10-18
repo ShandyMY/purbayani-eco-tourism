@@ -1,14 +1,24 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Search, Clock, Ticket, Navigation, Sparkles, X, MapPin, Eye, Info } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import {
+  Search,
+  Clock,
+  Ticket,
+  Navigation,
+  X,
+  MapPin,
+  Info,
+  Leaf,
+  ArrowUpRight,
+} from 'lucide-react';
 
 interface WisataItem {
   id: string;
   nama: string;
   kategori?: string | null;
   deskripsi: string;
-  lokasi?: string | null; // <-- Tambahan kolom lokasi teks
+  lokasi?: string | null;
   jamOperasional?: string | null;
   hargaTiket?: string | null;
   latitude?: number | null;
@@ -16,318 +26,375 @@ interface WisataItem {
   gambar?: string | null;
 }
 
-export default function WisataListClient({ initialData }: { initialData: WisataItem[] }) {
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&q=85';
+
+export default function WisataListClient({
+  initialData,
+}: {
+  initialData: WisataItem[];
+}) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
+  const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [selectedWisata, setSelectedWisata] = useState<WisataItem | null>(null);
 
-  // Ambil daftar kategori unik dari data
   const categories = useMemo(() => {
-    const list = Array.from(new Set(initialData.map((item) => item.kategori || 'Lainnya')));
+    const list = Array.from(
+      new Set(initialData.map((item) => item.kategori || 'Lainnya'))
+    );
     return ['Semua', ...list];
   }, [initialData]);
 
-  // Filter data berdasarkan keyword & kategori (mencakup pencarian berdasarkan lokasi juga)
   const filteredData = useMemo(() => {
-    return initialData.filter((item) => {
-      const matchSearch =
-        item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.deskripsi?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.lokasi?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.kategori?.toLowerCase().includes(searchQuery.toLowerCase());
+    const keyword = searchQuery.trim().toLowerCase();
 
-      const matchCategory = selectedCategory === 'Semua' || item.kategori === selectedCategory;
+    return initialData.filter((item) => {
+      const matchSearch = [item.nama, item.deskripsi, item.lokasi, item.kategori].some(
+        (value) => value?.toLowerCase().includes(keyword)
+      );
+
+      const matchCategory =
+        selectedCategory === 'Semua' ||
+        (item.kategori || 'Lainnya') === selectedCategory;
 
       return matchSearch && matchCategory;
     });
   }, [initialData, searchQuery, selectedCategory]);
 
+  useEffect(() => {
+    if (!selectedWisata) return;
+
+    const previousOverflow = document.body.style.overflow;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedWisata(null);
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedWisata]);
+
+  const hasCoordinates = (item: WisataItem) =>
+    item.latitude != null &&
+    item.longitude != null &&
+    Number.isFinite(Number(item.latitude)) &&
+    Number.isFinite(Number(item.longitude));
+
+  const getMapsUrl = (item: WisataItem) =>
+    `https://www.google.com/maps?q=${item.latitude},${item.longitude}`;
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('Semua');
+  };
+
+  const onImgError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+    if (image.src !== FALLBACK_IMAGE) image.src = FALLBACK_IMAGE;
+  };
+
   return (
-    <div className="space-y-8">
-      {/* ===== FILTER & SEARCH BAR ===== */}
-      <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100/80 backdrop-blur-md space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          {/* Input Search */}
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari destinasi wisata atau lokasi..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+    <div className="space-y-6">
+      {/* ===== PENCARIAN DAN FILTER ===== */}
+      <section className="rounded-3xl border border-emerald-950/10 bg-white p-5 shadow-sm md:p-6">
+        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+          <div className="w-full md:max-w-xl">
+            <label htmlFor="wisata-search" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-800">
+              Temukan destinasi
+            </label>
+
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-800/70" />
+              <input
+                id="wisata-search"
+                type="search"
+                placeholder="Cari wisata, aktivitas, atau lokasi..."
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="w-full rounded-full border border-emerald-950/10 bg-[#f7f8f4] py-3 pl-11 pr-11 text-sm text-[#183b32] outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-600/10"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  aria-label="Hapus pencarian"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-900"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Info Jumlah Hasil */}
-          <div className="text-xs font-medium text-slate-500 flex items-center gap-2 self-start md:self-auto">
-            <span>
-              Menampilkan <strong className="text-slate-900 font-bold">{filteredData.length}</strong> dari {initialData.length} Destinasi
-            </span>
+          <div className="flex items-center gap-3 self-start md:self-end">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800">
+              <Leaf className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-serif text-3xl leading-none text-[#0f3329]">
+                {filteredData.length}
+                <span className="ml-1 font-sans text-sm font-medium text-slate-400">/ {initialData.length}</span>
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Destinasi ditemukan</p>
+            </div>
           </div>
         </div>
 
-        {/* Filter Pills Kategori */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 no-scrollbar scroll-smooth">
-          {categories.map((cat) => {
-            const isActive = selectedCategory === cat;
+        <div className="my-5 border-t border-emerald-950/10" />
+
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-800">Kategori</p>
+          {(searchQuery || selectedCategory !== 'Semua') && (
+            <button type="button" onClick={resetFilters} className="text-xs font-bold text-emerald-800 transition hover:text-[#061f1b]">
+              Reset filter
+            </button>
+          )}
+        </div>
+
+        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
+          {categories.map((category) => {
+            const active = selectedCategory === category;
             return (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
-                  isActive
-                    ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
-                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+                type="button"
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                aria-pressed={active}
+                className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition duration-200 ${
+                  active
+                    ? 'border-[#0b2e28] bg-[#0b2e28] text-emerald-200'
+                    : 'border-emerald-950/10 bg-white text-slate-600 hover:border-emerald-600/40 hover:bg-emerald-50'
                 }`}
               >
-                {cat}
+                {category}
               </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* ===== GRID WISATA CARDS ===== */}
+      {/* ===== KARTU DESTINASI ===== */}
       {filteredData.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {filteredData.map((item) => (
-            <div
+            <article
               key={item.id}
-              className="group bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              className="group flex flex-col overflow-hidden rounded-3xl border border-emerald-950/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10"
             >
-              <div>
-                {/* Image & Header Overlay */}
-                <div 
-                  className="relative w-full h-52 bg-slate-100 overflow-hidden cursor-pointer"
-                  onClick={() => setSelectedWisata(item)}
-                >
-                  <img
-                    src={item.gambar || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80'}
-                    alt={item.nama}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80';
-                    }}
-                  />
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+              <button
+                type="button"
+                onClick={() => setSelectedWisata(item)}
+                aria-label={`Lihat detail ${item.nama}`}
+                className="relative block h-48 w-full overflow-hidden bg-[#eaf0e9] text-left sm:h-52"
+              >
+                <img
+                  src={item.gambar || FALLBACK_IMAGE}
+                  alt={item.nama}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  onError={onImgError}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#061b17]/80 via-[#061b17]/10 to-transparent" />
 
-                  {/* Kategori Badge */}
-                  <div className="absolute top-4 left-4">
-                    <span className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-md text-emerald-900 text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm border border-white/20">
-                      <Sparkles className="w-3 h-3 text-amber-500" />
-                      {item.kategori || 'Wisata Alam'}
-                    </span>
+                <span className="absolute left-4 top-4 rounded-full border border-white/25 bg-black/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
+                  {item.kategori || 'Wisata Alam'}
+                </span>
+
+                <span className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition group-hover:bg-emerald-300 group-hover:text-emerald-950">
+                  <ArrowUpRight className="h-4 w-4" />
+                </span>
+              </button>
+
+              <div className="flex flex-1 flex-col p-5">
+                <h3 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight text-[#0f3329]">
+                  {item.nama}
+                </h3>
+
+                {item.lokasi && (
+                  <div className="mt-2 flex items-start gap-1.5 text-xs font-medium text-slate-500">
+                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-700" />
+                    <span className="line-clamp-2">{item.lokasi}</span>
                   </div>
+                )}
 
-                  {/* Quick Detail Hint */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                    <span className="bg-white/90 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
-                      <Eye className="w-3.5 h-3.5 text-emerald-600" /> Lihat Detail
-                    </span>
-                  </div>
-                </div>
+                <p className="mt-3 line-clamp-3 flex-1 text-sm leading-6 text-slate-600">
+                  {item.deskripsi || 'Informasi lengkap destinasi ini akan segera tersedia.'}
+                </p>
 
-                {/* Body Content */}
-                <div className="p-6 space-y-2.5">
-                  <h3 
-                    onClick={() => setSelectedWisata(item)}
-                    className="text-xl font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-1 cursor-pointer"
-                  >
-                    {item.nama}
-                  </h3>
-
-                  {/* Lokasi Teks di Kartu */}
-                  {item.lokasi && (
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
-                      <MapPin className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{item.lokasi}</span>
-                    </div>
-                  )}
-
-                  <p className="text-slate-500 text-xs leading-relaxed font-normal line-clamp-3">
-                    {item.deskripsi || 'Belum ada deskripsi untuk destinasi wisata ini.'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Footer & Meta */}
-              <div className="p-6 pt-0 space-y-3">
-                {/* Jam Operasional & Tiket */}
                 {(item.jamOperasional || item.hargaTiket) && (
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                  <div className="mt-4 grid grid-cols-2 gap-2">
                     {item.jamOperasional ? (
-                      <div className="flex items-center gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-100/80">
-                        <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span className="truncate">{item.jamOperasional}</span>
+                      <div className="min-w-0 rounded-xl border border-emerald-950/10 bg-[#f7f8f4] p-3">
+                        <Clock className="mb-1.5 h-4 w-4 text-emerald-700" />
+                        <p className="text-[10px] font-semibold text-slate-400">Jam buka</p>
+                        <p className="mt-0.5 truncate text-xs font-semibold text-[#183b32]">{item.jamOperasional}</p>
                       </div>
                     ) : (
                       <div />
                     )}
-                    {item.hargaTiket ? (
-                      <div className="flex items-center gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-100/80">
-                        <Ticket className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span className="truncate font-semibold text-slate-800">{item.hargaTiket}</span>
+
+                    {item.hargaTiket && (
+                      <div className="min-w-0 rounded-xl border border-emerald-950/10 bg-[#f7f8f4] p-3">
+                        <Ticket className="mb-1.5 h-4 w-4 text-amber-600" />
+                        <p className="text-[10px] font-semibold text-slate-400">Harga tiket</p>
+                        <p className="mt-0.5 truncate text-xs font-semibold text-[#183b32]">{item.hargaTiket}</p>
                       </div>
-                    ) : (
-                      <div />
                     )}
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-1 gap-2">
+                <div className="mt-4 grid grid-cols-1 gap-2">
                   <button
+                    type="button"
                     onClick={() => setSelectedWisata(item)}
-                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-emerald-950/15 bg-white px-4 text-xs font-bold text-emerald-900 transition hover:bg-emerald-50"
                   >
-                    <Info className="w-4 h-4 text-slate-600" />
-                    <span>Lihat Detail</span>
+                    <Info className="h-4 w-4" />
+                    Lihat detail
                   </button>
 
-                  {item.latitude && item.longitude ? (
+                  {hasCoordinates(item) ? (
                     <a
-                      href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
+                      href={getMapsUrl(item)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/20 transition-all duration-200"
+                      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#0b2e28] px-4 text-xs font-bold text-emerald-200 transition hover:bg-[#10574a] active:scale-[0.98]"
                     >
-                      <Navigation className="w-4 h-4" />
-                      <span>Petunjuk Arah (Google Maps)</span>
+                      <Navigation className="h-4 w-4" />
+                      Petunjuk arah
                     </a>
                   ) : (
-                    <div className="w-full bg-slate-50 border border-slate-100 text-slate-400 font-medium text-xs py-2 px-4 rounded-xl text-center italic">
-                      Lokasi koordinat belum tersedia
-                    </div>
+                    <p className="rounded-full bg-[#f7f8f4] px-4 py-3 text-center text-xs text-slate-400">
+                      Koordinat belum tersedia
+                    </p>
                   )}
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       ) : (
-        /* ===== EMPTY STATE ===== */
-        <div className="text-center py-16 bg-white rounded-3xl border border-slate-100 shadow-sm max-w-md mx-auto p-8">
-          <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8" />
+        <section className="mx-auto max-w-lg rounded-3xl border border-emerald-950/10 bg-white px-6 py-12 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-800">
+            <Search className="h-6 w-6" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">Destinasi Tidak Ditemukan</h3>
-          <p className="text-slate-500 text-xs mt-1 leading-relaxed">
-            Tidak ada destinasi yang cocok dengan kata kunci &quot;<strong className="text-slate-800">{searchQuery}</strong>&quot; atau kategori yang dipilih.
+          <h3 className="mt-5 font-serif text-2xl text-[#0f3329]">Destinasi belum ditemukan</h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-600">
+            Coba kata kunci lain atau pilih kategori yang berbeda untuk menemukan destinasi wisata Purbayani.
           </p>
           <button
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedCategory('Semua');
-            }}
-            className="mt-5 px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition"
+            type="button"
+            onClick={resetFilters}
+            className="mt-6 min-h-11 rounded-full bg-[#0b2e28] px-6 text-xs font-bold text-emerald-200 transition hover:bg-[#10574a]"
           >
-            Reset Filter
+            Tampilkan semua destinasi
           </button>
-        </div>
+        </section>
       )}
 
-      {/* ===== POPUP MODAL DETAIL WISATA ===== */}
+      {/* ===== MODAL DETAIL ===== */}
       {selectedWisata && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div 
-            className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-slate-100 relative max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+        <div
+          className="fixed inset-0 z-[1100] flex items-center justify-center bg-[#061f1b]/75 p-3 backdrop-blur-sm sm:p-6"
+          onClick={() => setSelectedWisata(null)}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="wisata-modal-title"
+            className="relative flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/20 bg-[#f7f8f4] shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
           >
-            {/* Close Button */}
             <button
+              type="button"
+              aria-label="Tutup detail"
               onClick={() => setSelectedWisata(null)}
-              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-md transition-colors"
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-[#061f1b]/65 text-white backdrop-blur-md transition hover:bg-[#061f1b]"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
 
-            {/* Modal Image */}
-            <div className="relative w-full h-64 md:h-80 bg-slate-100 shrink-0">
+            <div className="relative h-52 shrink-0 bg-[#eaf0e9] sm:h-64">
               <img
-                src={selectedWisata.gambar || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80'}
+                src={selectedWisata.gambar || FALLBACK_IMAGE}
                 alt={selectedWisata.nama}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80';
-                }}
+                className="h-full w-full object-cover"
+                onError={onImgError}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              
-              <div className="absolute bottom-4 left-6 right-6 text-white space-y-1.5">
-                <span className="inline-flex items-center gap-1.5 bg-emerald-500/90 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm mb-1">
-                  <Sparkles className="w-3 h-3 text-amber-300" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#061b17]/90 via-[#061b17]/20 to-transparent" />
+
+              <div className="absolute bottom-5 left-5 right-5 text-white sm:bottom-6 sm:left-7 sm:right-7">
+                <span className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-md">
+                  <Leaf className="h-3 w-3 text-emerald-300" />
                   {selectedWisata.kategori || 'Wisata Alam'}
                 </span>
-                <h2 className="text-2xl md:text-3xl font-black">{selectedWisata.nama}</h2>
+                <h2 id="wisata-modal-title" className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+                  {selectedWisata.nama}
+                </h2>
                 {selectedWisata.lokasi && (
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-200 font-medium">
-                    <MapPin className="w-3.5 h-3.5 shrink-0" />
-                    <span>{selectedWisata.lokasi}</span>
-                  </div>
+                  <p className="mt-1.5 flex items-center gap-2 text-xs text-white/85 sm:text-sm">
+                    <MapPin className="h-4 w-4 shrink-0 text-emerald-300" />
+                    {selectedWisata.lokasi}
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto space-y-6">
-              {/* Meta Stats */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="overflow-y-auto p-5 sm:p-7">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {selectedWisata.jamOperasional && (
-                  <div className="flex items-center gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div className="flex items-start gap-3 rounded-2xl border border-emerald-950/10 bg-white p-4">
+                    <div className="rounded-xl bg-emerald-50 p-2 text-emerald-800"><Clock className="h-5 w-5" /></div>
                     <div>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">Jam Operasional</p>
-                      <p className="font-bold text-slate-800">{selectedWisata.jamOperasional}</p>
+                      <p className="text-[11px] font-semibold text-slate-400">Jam operasional</p>
+                      <p className="mt-0.5 text-sm font-semibold text-[#183b32]">{selectedWisata.jamOperasional}</p>
                     </div>
                   </div>
                 )}
+
                 {selectedWisata.hargaTiket && (
-                  <div className="flex items-center gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <Ticket className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div className="flex items-start gap-3 rounded-2xl border border-emerald-950/10 bg-white p-4">
+                    <div className="rounded-xl bg-amber-50 p-2 text-amber-600"><Ticket className="h-5 w-5" /></div>
                     <div>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">Harga Tiket</p>
-                      <p className="font-bold text-slate-800">{selectedWisata.hargaTiket}</p>
+                      <p className="text-[11px] font-semibold text-slate-400">Harga tiket</p>
+                      <p className="mt-0.5 text-sm font-semibold text-[#183b32]">{selectedWisata.hargaTiket}</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Deskripsi Lengkap */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tentang Destinasi</h4>
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-                  {selectedWisata.deskripsi || 'Tidak ada informasi deskripsi tambahan.'}
+              <div className="mt-6">
+                <h3 className="mb-2 font-serif text-xl text-[#0f3329]">Tentang destinasi</h3>
+                <p className="whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-[15px]">
+                  {selectedWisata.deskripsi || 'Informasi lengkap mengenai destinasi ini belum tersedia.'}
                 </p>
               </div>
 
-              {/* Map Action Button */}
-              {selectedWisata.latitude && selectedWisata.longitude ? (
-                <a
-                  href={`https://www.google.com/maps?q=${selectedWisata.latitude},${selectedWisata.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 px-5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
-                >
-                  <Navigation className="w-4 h-4" />
-                  <span>Buka Petunjuk Arah di Google Maps</span>
-                </a>
-              ) : (
-                <div className="p-3 bg-slate-50 rounded-2xl text-center text-xs text-slate-400 italic">
-                  Koordinat lokasi peta tidak tersedia.
-                </div>
-              )}
+              <div className="mt-6 border-t border-emerald-950/10 pt-5">
+                {hasCoordinates(selectedWisata) ? (
+                  <a
+                    href={getMapsUrl(selectedWisata)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#0b2e28] px-5 text-sm font-bold text-emerald-200 transition hover:bg-[#10574a]"
+                  >
+                    <Navigation className="h-4 w-4" />
+                    Buka petunjuk arah Google Maps
+                    <ArrowUpRight className="h-4 w-4" />
+                  </a>
+                ) : (
+                  <p className="rounded-2xl border border-emerald-950/10 bg-white p-4 text-center text-xs leading-5 text-slate-500">
+                    Petunjuk arah belum tersedia karena koordinat destinasi belum diisi.
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          </section>
         </div>
       )}
     </div>

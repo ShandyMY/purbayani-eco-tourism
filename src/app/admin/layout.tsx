@@ -23,8 +23,7 @@ export default function AdminLayout({
     { title: 'Kelola UMKM', href: '/admin/umkm', icon: Store },
     { title: 'Kelola Wisata', href: '/admin/wisata', icon: Compass },
     { title: 'Fasilitas & Usaha', href: '/admin/fasilitas', icon: Building2 },
-    { title: 'Kelola Berita', href: '/admin/berita', icon: Newspaper },
-    { title: 'Profil Desa', href: '/admin/profil', icon: FileText },
+    { title: 'Kelola Berita', href: '/admin/berita', icon: Newspaper }
   ];
 
   return (

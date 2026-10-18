@@ -1,8 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { MapPin, Clock, Ticket, ImageOff, Navigation, X } from 'lucide-react';
+import {
+  MapPin,
+  Clock,
+  Ticket,
+  ImageOff,
+  Navigation,
+  X,
+  ArrowUpRight,
+  Leaf,
+} from 'lucide-react';
 
 interface WisataItem {
   id: string;
@@ -14,169 +23,261 @@ interface WisataItem {
   hargaTiket: string | null;
   latitude: number | null;
   longitude: number | null;
+  lokasi?: string | null;
 }
 
 export default function WisataCard({ item }: { item: WisataItem }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  const hasCoordinates =
+    item.latitude != null &&
+    item.longitude != null &&
+    Number.isFinite(Number(item.latitude)) &&
+    Number.isFinite(Number(item.longitude));
+
+  const mapsUrl = hasCoordinates
+    ? `https://www.google.com/maps?q=${item.latitude},${item.longitude}`
+    : null;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const noPhoto = (size: string) => (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-emerald-800/50">
+      <ImageOff className={size} />
+      <span className="text-xs font-medium">Foto belum tersedia</span>
+    </div>
+  );
 
   return (
     <>
-      {/* Kartu Wisata */}
-      <div
-        onClick={() => setIsOpen(true)}
-        className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between cursor-pointer"
-      >
-        <div>
-          {/* Image & Category Overlay */}
-          <div className="h-56 w-full bg-slate-100 relative overflow-hidden">
-            {item.gambar ? (
-              <Image
-                src={item.gambar}
-                alt={item.nama}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 text-xs gap-2">
-                <ImageOff className="w-8 h-8 stroke-1" />
-                <span>Foto Tidak Tersedia</span>
-              </div>
-            )}
-            <div className="absolute top-4 left-4">
-              <span className="bg-white/90 backdrop-blur-md text-emerald-800 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-sm border border-emerald-100">
-                {item.kategori || 'Destinasi Wisata'}
-              </span>
-            </div>
-          </div>
-
-          {/* Body Content */}
-          <div className="p-6 space-y-3">
-            <h2 className="font-bold text-slate-900 text-lg group-hover:text-emerald-600 transition-colors">
-              {item.nama}
-            </h2>
-            <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed">
-              {item.deskripsi}
-            </p>
-          </div>
-        </div>
-
-        {/* Footer Meta & Button */}
-        <div className="p-6 bg-slate-50/80 border-t border-slate-100/80 space-y-3">
-          <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
-            {item.jamOperasional && (
-              <div className="flex items-center gap-1.5 bg-white p-2 rounded-xl border border-slate-100">
-                <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="truncate">{item.jamOperasional}</span>
-              </div>
-            )}
-            {item.hargaTiket && (
-              <div className="flex items-center gap-1.5 bg-white p-2 rounded-xl border border-slate-100">
-                <Ticket className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span className="truncate font-semibold">{item.hargaTiket}</span>
-              </div>
-            )}
-          </div>
-
-          {item.latitude && item.longitude && (
-            <a
-              href={`https://maps.google.com/?q=${item.latitude},${item.longitude}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()} // Mencegah pop-up terbuka saat menekan button ini
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>Petunjuk Arah (Google Maps)</span>
-            </a>
-          )}
-        </div>
-      </div>
-
-      {/* Pop Up / Modal Detail */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setIsOpen(false)}
+      {/* ===== KARTU ===== */}
+      <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-emerald-950/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10">
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          aria-label={`Lihat detail ${item.nama}`}
+          className="relative block h-48 w-full overflow-hidden bg-[#eaf0e9] text-left sm:h-52"
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 flex flex-col relative animate-in zoom-in-95 duration-200"
-          >
-            {/* Close Button */}
+          {item.gambar && !imageFailed ? (
+            <Image
+              src={item.gambar}
+              alt={item.nama}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition duration-700 ease-out group-hover:scale-105"
+              onError={() => setImageFailed(true)}
+            />
+          ) : (
+            noPhoto('h-8 w-8 stroke-[1.3]')
+          )}
+
+          <div className="absolute inset-0 bg-gradient-to-t from-[#061b17]/85 via-[#061b17]/10 to-transparent" />
+
+          <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
+            <Leaf className="h-3 w-3 text-emerald-300" />
+            {item.kategori || 'Destinasi Wisata'}
+          </span>
+
+          <span className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition group-hover:bg-emerald-300 group-hover:text-emerald-950">
+            <ArrowUpRight className="h-4 w-4" />
+          </span>
+
+          <h3 className="absolute bottom-4 left-5 right-5 text-xl font-semibold leading-tight tracking-tight text-white sm:text-2xl">
+            {item.nama}
+          </h3>
+        </button>
+
+        <div className="flex flex-1 flex-col p-5">
+          {item.lokasi && (
+            <div className="mb-2.5 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
+              <span className="line-clamp-1">{item.lokasi}</span>
+            </div>
+          )}
+
+          <p className="line-clamp-3 text-sm leading-6 text-slate-600">
+            {item.deskripsi?.trim() || 'Informasi destinasi ini akan segera diperbarui.'}
+          </p>
+
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {item.jamOperasional ? (
+              <div className="flex min-w-0 items-start gap-2.5 rounded-xl border border-emerald-950/10 bg-[#f7f8f4] p-3">
+                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-400">Jam operasional</p>
+                  <p className="mt-0.5 break-words text-xs font-semibold text-[#183b32]">{item.jamOperasional}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-emerald-950/15 p-3">
+                <p className="text-[10px] text-slate-400">Jam operasional</p>
+                <p className="mt-0.5 text-xs text-slate-500">Belum tersedia</p>
+              </div>
+            )}
+
+            {item.hargaTiket ? (
+              <div className="flex min-w-0 items-start gap-2.5 rounded-xl border border-emerald-950/10 bg-[#f7f8f4] p-3">
+                <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-400">Harga tiket</p>
+                  <p className="mt-0.5 break-words text-xs font-semibold text-[#183b32]">{item.hargaTiket}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-emerald-950/15 p-3">
+                <p className="text-[10px] text-slate-400">Harga tiket</p>
+                <p className="mt-0.5 text-xs text-slate-500">Belum tersedia</p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-2">
             <button
-              onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors backdrop-blur-md"
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-emerald-950/15 bg-white px-4 text-xs font-bold text-emerald-900 transition hover:bg-emerald-50"
             >
-              <X className="w-5 h-5" />
+              Lihat Detail
+              <ArrowUpRight className="h-4 w-4" />
             </button>
 
-            {/* Modal Image Header */}
-            <div className="h-64 md:h-80 w-full bg-slate-100 relative shrink-0">
-              {item.gambar ? (
+            {mapsUrl ? (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#0b2e28] px-4 text-xs font-bold text-emerald-200 transition hover:bg-[#10574a] focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
+              >
+                <Navigation className="h-4 w-4" />
+                Petunjuk Arah
+              </a>
+            ) : (
+              <div className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#f7f8f4] px-4 text-xs font-medium text-slate-400">
+                <MapPin className="h-4 w-4" />
+                Koordinat belum tersedia
+              </div>
+            )}
+          </div>
+        </div>
+      </article>
+
+      {/* ===== MODAL DETAIL ===== */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[1100] flex items-center justify-center bg-[#061f1b]/75 p-3 backdrop-blur-sm sm:p-6"
+          onClick={() => setIsOpen(false)}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`wisata-title-${item.id}`}
+            className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/20 bg-[#f7f8f4] shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="relative h-52 shrink-0 overflow-hidden bg-[#eaf0e9] sm:h-64">
+              {item.gambar && !imageFailed ? (
                 <Image
                   src={item.gambar}
                   alt={item.nama}
                   fill
+                  sizes="(max-width: 768px) 100vw, 672px"
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 text-sm gap-2">
-                  <ImageOff className="w-10 h-10 stroke-1" />
-                  <span>Foto Tidak Tersedia</span>
-                </div>
+                noPhoto('h-9 w-9')
               )}
-              <div className="absolute top-4 left-4">
-                <span className="bg-white/90 backdrop-blur-md text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-emerald-100">
+
+              <div className="absolute inset-0 bg-gradient-to-t from-[#061b17]/90 via-[#061b17]/20 to-transparent" />
+
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                aria-label="Tutup detail wisata"
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-[#061f1b]/65 text-white backdrop-blur-md transition hover:bg-[#061f1b]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="absolute bottom-5 left-5 right-5 text-white sm:bottom-6 sm:left-7 sm:right-7">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-md">
+                  <Leaf className="h-3 w-3 text-emerald-300" />
                   {item.kategori || 'Destinasi Wisata'}
                 </span>
-              </div>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 md:p-8 space-y-6">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight">
+                <h2 id={`wisata-title-${item.id}`} className="mt-2.5 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
                   {item.nama}
                 </h2>
-                <div className="flex flex-wrap gap-3 mt-4 text-xs font-medium text-slate-600">
-                  {item.jamOperasional && (
-                    <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                      <Clock className="w-4 h-4 text-emerald-600" />
-                      <span>{item.jamOperasional}</span>
-                    </div>
-                  )}
-                  {item.hargaTiket && (
-                    <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                      <Ticket className="w-4 h-4 text-amber-600" />
-                      <span className="font-semibold text-slate-800">{item.hargaTiket}</span>
-                    </div>
-                  )}
-                </div>
+                {item.lokasi && (
+                  <p className="mt-1.5 flex items-center gap-2 text-xs text-white/85 sm:text-sm">
+                    <MapPin className="h-4 w-4 shrink-0 text-emerald-300" />
+                    {item.lokasi}
+                  </p>
+                )}
               </div>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Deskripsi Wisata</h3>
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-                  {item.deskripsi || 'Tidak ada deskripsi detail untuk destinasi wisata ini.'}
-                </p>
-              </div>
-
-              {item.latitude && item.longitude && (
-                <div className="pt-2">
-                  <a
-                    href={`https://maps.google.com/?q=${item.latitude},${item.longitude}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 px-5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
-                  >
-                    <Navigation className="w-4 h-4" />
-                    <span>Petunjuk Arah (Google Maps)</span>
-                  </a>
-                </div>
-              )}
             </div>
-          </div>
+
+            <div className="overflow-y-auto p-5 sm:p-7">
+              <h3 className="mb-2 font-serif text-xl text-[#0f3329]">Tentang destinasi</h3>
+              <p className="whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-[15px]">
+                {item.deskripsi?.trim() || 'Belum ada deskripsi tambahan untuk destinasi ini.'}
+              </p>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-emerald-950/10 bg-white p-4">
+                  <div className="flex items-center gap-2 text-emerald-700">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-[11px] font-semibold">Jam operasional</span>
+                  </div>
+                  <p className="mt-1.5 text-sm font-semibold text-[#183b32]">{item.jamOperasional || 'Belum tersedia'}</p>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-950/10 bg-white p-4">
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <Ticket className="h-4 w-4" />
+                    <span className="text-[11px] font-semibold">Harga tiket</span>
+                  </div>
+                  <p className="mt-1.5 text-sm font-semibold text-[#183b32]">{item.hargaTiket || 'Belum tersedia'}</p>
+                </div>
+              </div>
+
+              {mapsUrl && (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#0b2e28] px-5 text-sm font-bold text-emerald-200 transition hover:bg-[#10574a]"
+                >
+                  <Navigation className="h-4 w-4" />
+                  Buka Lokasi di Google Maps
+                </a>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="mt-3 min-h-11 w-full rounded-full border border-emerald-950/15 px-5 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-50"
+              >
+                Tutup Detail
+              </button>
+            </div>
+          </section>
         </div>
       )}
     </>

@@ -1,7 +1,17 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Search, Navigation, Building2, X, MapPin, Eye, Clock, Phone, Info, ShieldAlert } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import {
+  Search,
+  Navigation,
+  Building2,
+  X,
+  MapPin,
+  Clock,
+  Phone,
+  Info,
+  ArrowUpRight,
+} from 'lucide-react';
 import Image from 'next/image';
 
 interface FasilitasItem {
@@ -17,73 +27,183 @@ interface FasilitasItem {
   gambar?: string | null;
 }
 
-export default function FasilitasListClient({ initialData }: { initialData: FasilitasItem[] }) {
+/**
+ * Memvalidasi URL gambar sebelum digunakan oleh next/image.
+ * Mendukung URL HTTP/HTTPS dan path gambar lokal dari folder public.
+ */
+function getValidImageSrc(gambar: string | null | undefined): string | null {
+  if (!gambar || typeof gambar !== 'string') {
+    return null;
+  }
+
+  const src = gambar.trim();
+
+  if (!src || src.toLowerCase() === 'null' || src.toLowerCase() === 'undefined') {
+    return null;
+  }
+
+  // Path lokal, misalnya /images/puskesmas.jpg
+  if (src.startsWith('/') && !src.startsWith('//')) {
+    return src;
+  }
+
+  // URL internet harus valid dan menggunakan HTTP atau HTTPS.
+  try {
+    const url = new URL(src);
+
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return src;
+    }
+  } catch {
+    // Abaikan URL yang tidak valid.
+  }
+
+  return null;
+}
+
+const mapsUrl = (item: FasilitasItem) =>
+  `https://maps.google.com/?q=${item.latitude},${item.longitude}`;
+
+function ImageFallback({ modal = false }: { modal?: boolean }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#eaf0e9] text-emerald-900/40">
+      <Building2 className={`${modal ? 'h-10 w-10' : 'h-8 w-8'} stroke-[1.3]`} />
+      <span className="text-xs font-medium">
+        {modal ? 'Foto fasilitas' : 'Gambar tidak tersedia'}
+      </span>
+    </div>
+  );
+}
+
+export default function FasilitasListClient({
+  initialData,
+}: {
+  initialData: FasilitasItem[];
+}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [selectedFasilitas, setSelectedFasilitas] = useState<FasilitasItem | null>(null);
 
-  // Kategori unik yang diekstrak dari database
+  // Kategori unik dari database.
   const categories = useMemo(() => {
     const list = Array.from(new Set(initialData.map((item) => item.kategori || 'Umum')));
     return ['Semua', ...list];
   }, [initialData]);
 
-  // Logika Filter & Pencarian
+  // Filter kategori dan pencarian.
   const filteredData = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+
     return initialData.filter((item) => {
       const matchSearch =
-        item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.deskripsi?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.alamat?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.kategori?.toLowerCase().includes(searchQuery.toLowerCase());
+        (item.nama || '').toLowerCase().includes(query) ||
+        (item.deskripsi || '').toLowerCase().includes(query) ||
+        (item.alamat || '').toLowerCase().includes(query) ||
+        (item.kategori || '').toLowerCase().includes(query);
 
-      const matchCategory = selectedCategory === 'Semua' || item.kategori === selectedCategory;
+      const matchCategory =
+        selectedCategory === 'Semua' || (item.kategori || 'Umum') === selectedCategory;
 
       return matchSearch && matchCategory;
     });
   }, [initialData, searchQuery, selectedCategory]);
 
+  const selectedImage = getValidImageSrc(selectedFasilitas?.gambar);
+
+  // Tutup modal dengan Esc dan kunci scroll halaman.
+  useEffect(() => {
+    if (!selectedFasilitas) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedFasilitas(null);
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedFasilitas]);
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('Semua');
+  };
+
   return (
-    <div className="space-y-8">
-      {/* ===== BAR PENCARIAN & FILTER KATEGORI ===== */}
-      <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100/80 backdrop-blur-md space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari fasilitas umum (misal: Puskesmas, Balai)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all placeholder:text-slate-400"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+    <div className="space-y-6">
+      {/* ===== PENCARIAN DAN FILTER ===== */}
+      <section className="rounded-3xl border border-emerald-950/10 bg-white p-5 shadow-sm md:p-6">
+        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <div className="w-full md:max-w-md">
+            <label htmlFor="fasilitas-search" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-800">
+              Temukan fasilitas
+            </label>
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-800/70" />
+              <input
+                id="fasilitas-search"
+                type="search"
+                placeholder="Cari fasilitas (misal: Puskesmas, Balai)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-full border border-emerald-950/10 bg-[#f7f8f4] py-3 pl-11 pr-11 text-sm text-[#183b32] outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-600/10"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Hapus pencarian"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-900"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="text-xs font-medium text-slate-500 self-start md:self-auto">
-            Menampilkan <strong className="text-slate-900 font-bold">{filteredData.length}</strong> dari {initialData.length} fasilitas
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-serif text-3xl leading-none text-[#0f3329]">
+                {filteredData.length}
+                <span className="ml-1 font-sans text-sm font-medium text-slate-400">/ {initialData.length}</span>
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Fasilitas ditemukan</p>
+            </div>
           </div>
         </div>
 
-        {/* Tag Kategori Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 no-scrollbar">
+        <div className="my-5 border-t border-emerald-950/10" />
+
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-800">Kategori</p>
+          {(searchQuery || selectedCategory !== 'Semua') && (
+            <button type="button" onClick={resetFilters} className="text-xs font-bold text-emerald-800 transition hover:text-[#061f1b]">
+              Reset filter
+            </button>
+          )}
+        </div>
+
+        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
           {categories.map((cat) => {
             const isActive = selectedCategory === cat;
+
             return (
               <button
+                type="button"
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+                aria-pressed={isActive}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-semibold transition duration-200 ${
                   isActive
-                    ? 'bg-teal-900 text-teal-100 shadow-md shadow-teal-950/20'
-                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+                    ? 'border-[#0b2e28] bg-[#0b2e28] text-emerald-200'
+                    : 'border-emerald-950/10 bg-white text-slate-600 hover:border-emerald-600/40 hover:bg-emerald-50'
                 }`}
               >
                 {cat}
@@ -91,222 +211,221 @@ export default function FasilitasListClient({ initialData }: { initialData: Fasi
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* ===== GRID KARTU FASILITAS ===== */}
+      {/* ===== KARTU FASILITAS ===== */}
       {filteredData.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredData.map((item) => (
-            <div
-              key={item.id}
-              className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
-            >
-              <div>
-                {/* Visual Image Header */}
-                <div 
-                  className="h-52 w-full bg-slate-100 relative overflow-hidden cursor-pointer"
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredData.map((item) => {
+            const imageSrc = getValidImageSrc(item.gambar);
+
+            return (
+              <article
+                key={item.id}
+                className="group flex flex-col overflow-hidden rounded-3xl border border-emerald-950/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10"
+              >
+                <button
+                  type="button"
                   onClick={() => setSelectedFasilitas(item)}
+                  aria-label={`Lihat detail ${item.nama}`}
+                  className="relative block h-48 w-full overflow-hidden bg-[#eaf0e9] text-left sm:h-52"
                 >
-                  {item.gambar ? (
+                  {imageSrc ? (
                     <Image
-                      src={item.gambar}
-                      alt={item.nama}
+                      src={imageSrc}
+                      alt={item.nama || 'Fasilitas umum'}
                       fill
                       sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover transition duration-700 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 text-xs gap-2">
-                      <Building2 className="w-8 h-8 stroke-1" />
-                      <span>Gambar Fasilitas</span>
-                    </div>
+                    <ImageFallback />
                   )}
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061b17]/80 via-[#061b17]/10 to-transparent" />
 
-                  <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-md text-teal-900 text-[10px] font-extrabold px-3 py-1.5 rounded-full shadow-sm border border-teal-100">
+                  <span className="absolute left-4 top-4 rounded-full border border-white/25 bg-black/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
                     {item.kategori || 'Umum'}
                   </span>
 
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                    <span className="bg-white/90 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
-                      <Eye className="w-3.5 h-3.5 text-teal-600" /> Lihat Detail
-                    </span>
-                  </div>
-                </div>
+                  <span className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition group-hover:bg-emerald-300 group-hover:text-emerald-950">
+                    <ArrowUpRight className="h-4 w-4" />
+                  </span>
+                </button>
 
-                {/* Body Content */}
-                <div className="p-6 space-y-3">
-                  <h3 
-                    onClick={() => setSelectedFasilitas(item)}
-                    className="font-bold text-slate-900 text-lg group-hover:text-teal-600 transition-colors line-clamp-1 cursor-pointer"
-                  >
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-[#0f3329]">
                     {item.nama}
                   </h3>
 
                   {item.jamOperasional && (
-                    <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50/80 px-2.5 py-1 rounded-lg w-fit">
-                      <Clock className="w-3.5 h-3.5 shrink-0" />
-                      <span className="font-semibold line-clamp-1">{item.jamOperasional}</span>
+                    <div className="mt-2 flex w-fit items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                      <Clock className="h-3.5 w-3.5 shrink-0" />
+                      <span className="line-clamp-1">{item.jamOperasional}</span>
                     </div>
                   )}
 
-                  <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed">
+                  <p className="mt-3 line-clamp-3 flex-1 text-sm leading-6 text-slate-600">
                     {item.deskripsi || 'Tidak ada deskripsi rinci untuk fasilitas ini.'}
                   </p>
-                </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="p-6 pt-0 space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setSelectedFasilitas(item)}
-                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Info className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Detail Info</span>
-                  </button>
-
-                  {item.latitude && item.longitude ? (
-                    <a
-                      href={`https://maps.google.com/?q=${item.latitude},${item.longitude}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="w-full bg-teal-600 hover:bg-teal-700 active:scale-[0.98] text-white font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-sm shadow-teal-600/20 transition-all duration-200"
+                  <div className="mt-5 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFasilitas(item)}
+                      className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-emerald-950/15 bg-white px-3 text-xs font-bold text-emerald-900 transition hover:bg-emerald-50"
                     >
-                      <Navigation className="w-3.5 h-3.5" />
-                      <span>Rute Maps</span>
-                    </a>
-                  ) : (
-                    <div className="w-full bg-slate-50 text-slate-400 font-medium text-[11px] py-2.5 px-2 rounded-xl text-center italic flex items-center justify-center">
-                      Tanpa Maps
-                    </div>
-                  )}
+                      <Info className="h-4 w-4" />
+                      Detail
+                    </button>
+
+                    {item.latitude != null && item.longitude != null ? (
+                      <a
+                        href={mapsUrl(item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-[#0b2e28] px-3 text-xs font-bold text-emerald-200 transition hover:bg-[#10574a] active:scale-[0.98]"
+                      >
+                        <Navigation className="h-4 w-4" />
+                        Rute Maps
+                      </a>
+                    ) : (
+                      <p className="flex min-h-11 items-center justify-center rounded-full bg-[#f7f8f4] px-3 text-xs text-slate-400">
+                        Tanpa Maps
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </article>
+            );
+          })}
         </div>
       ) : (
-        /* Empty State */
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-12 text-center max-w-xl mx-auto space-y-4">
-          <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto">
-            <Building2 className="w-8 h-8" />
+        <section className="mx-auto max-w-lg rounded-3xl border border-emerald-950/10 bg-white px-6 py-12 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-800">
+            <Building2 className="h-6 w-6" />
           </div>
-          <h3 className="text-lg font-bold text-slate-800">Fasilitas Tidak Ditemukan</h3>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Tidak ada data fasilitas umum yang sesuai dengan pencarian &quot;<strong className="text-slate-800">{searchQuery}</strong>&quot;.
+          <h3 className="mt-5 font-serif text-2xl text-[#0f3329]">Fasilitas tidak ditemukan</h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-600">
+            {searchQuery
+              ? `Tidak ada fasilitas yang cocok dengan pencarian “${searchQuery}”.`
+              : 'Tidak ada fasilitas pada kategori ini.'}
           </p>
           <button
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedCategory('Semua');
-            }}
-            className="mt-2 px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition"
+            type="button"
+            onClick={resetFilters}
+            className="mt-6 min-h-11 rounded-full bg-[#0b2e28] px-6 text-xs font-bold text-emerald-200 transition hover:bg-[#10574a]"
           >
-            Reset Filter
+            Reset filter
           </button>
-        </div>
+        </section>
       )}
 
-      {/* ===== MODAL DETAIL POPUP ===== */}
+      {/* ===== MODAL DETAIL ===== */}
       {selectedFasilitas && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+        <div
+          className="fixed inset-0 z-[1100] flex items-center justify-center bg-[#061f1b]/75 p-3 backdrop-blur-sm sm:p-6"
           onClick={() => setSelectedFasilitas(null)}
         >
-          <div 
-            className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-slate-100 relative max-h-[90vh] flex flex-col"
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fasilitas-modal-title"
+            className="relative flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/20 bg-[#f7f8f4] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              type="button"
               onClick={() => setSelectedFasilitas(null)}
-              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-md transition-colors"
+              aria-label="Tutup detail fasilitas"
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-[#061f1b]/65 text-white backdrop-blur-md transition hover:bg-[#061f1b]"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
 
-            <div className="relative w-full h-64 md:h-72 bg-slate-100 shrink-0">
-              {selectedFasilitas.gambar ? (
+            <div className="relative h-52 shrink-0 bg-[#eaf0e9] sm:h-64">
+              {selectedImage ? (
                 <Image
-                  src={selectedFasilitas.gambar}
-                  alt={selectedFasilitas.nama}
+                  src={selectedImage}
+                  alt={selectedFasilitas.nama || 'Fasilitas umum'}
                   fill
+                  sizes="(max-width: 768px) 100vw, 672px"
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
-                  <Building2 className="w-12 h-12 stroke-1" />
-                  <span className="text-xs">Foto Fasilitas</span>
-                </div>
+                <ImageFallback modal />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              
-              <div className="absolute bottom-4 left-6 right-6 text-white">
-                <span className="inline-block bg-teal-500/90 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm mb-2">
+
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061b17]/90 via-[#061b17]/20 to-transparent" />
+
+              <div className="absolute bottom-5 left-5 right-5 text-white sm:bottom-6 sm:left-7 sm:right-7">
+                <span className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-md">
+                  <Building2 className="h-3 w-3 text-emerald-300" />
                   {selectedFasilitas.kategori || 'Fasilitas Umum'}
                 </span>
-                <h2 className="text-2xl md:text-3xl font-black">{selectedFasilitas.nama}</h2>
+                <h2 id="fasilitas-modal-title" className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+                  {selectedFasilitas.nama}
+                </h2>
               </div>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-6">
-              {/* Grid Metadata Informasi */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {selectedFasilitas.jamOperasional && (
-                  <div className="flex items-start gap-3 bg-amber-50/70 border border-amber-200/50 p-3.5 rounded-2xl">
-                    <Clock className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-[10px] text-amber-800 font-semibold uppercase">Jam Operasional / Layanan</p>
-                      <p className="text-xs font-bold text-slate-800 mt-0.5">{selectedFasilitas.jamOperasional}</p>
+            <div className="space-y-5 overflow-y-auto p-5 sm:p-7">
+              {(selectedFasilitas.jamOperasional || selectedFasilitas.kontak) && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {selectedFasilitas.jamOperasional && (
+                    <div className="flex items-start gap-3 rounded-2xl border border-emerald-950/10 bg-white p-4">
+                      <div className="rounded-xl bg-amber-50 p-2 text-amber-700"><Clock className="h-5 w-5" /></div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-400">Jam operasional / layanan</p>
+                        <p className="mt-0.5 text-sm font-semibold text-[#183b32]">{selectedFasilitas.jamOperasional}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {selectedFasilitas.kontak && (
-                  <div className="flex items-start gap-3 bg-emerald-50/70 border border-emerald-200/50 p-3.5 rounded-2xl">
-                    <Phone className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-[10px] text-emerald-800 font-semibold uppercase">Kontak / Telepon Pendaftaran</p>
-                      <p className="text-xs font-bold text-slate-800 mt-0.5">{selectedFasilitas.kontak}</p>
+                  {selectedFasilitas.kontak && (
+                    <div className="flex items-start gap-3 rounded-2xl border border-emerald-950/10 bg-white p-4">
+                      <div className="rounded-xl bg-emerald-50 p-2 text-emerald-800"><Phone className="h-5 w-5" /></div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-400">Kontak / telepon</p>
+                        <p className="mt-0.5 text-sm font-semibold text-[#183b32]">{selectedFasilitas.kontak}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {selectedFasilitas.alamat && (
-                <div className="flex items-start gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                  <MapPin className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 rounded-2xl border border-emerald-950/10 bg-white p-4">
+                  <div className="rounded-xl bg-emerald-50 p-2 text-emerald-800"><MapPin className="h-5 w-5" /></div>
                   <div>
-                    <p className="text-[10px] text-slate-400 font-semibold uppercase">Alamat Lengkap</p>
-                    <p className="text-xs font-semibold text-slate-800 mt-0.5">{selectedFasilitas.alamat}</p>
+                    <p className="text-[11px] font-semibold text-slate-400">Alamat lengkap</p>
+                    <p className="mt-0.5 text-sm font-semibold text-[#183b32]">{selectedFasilitas.alamat}</p>
                   </div>
                 </div>
               )}
 
               <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Informasi Layanan & Deskripsi</h4>
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+                <h3 className="mb-2 font-serif text-xl text-[#0f3329]">Informasi layanan</h3>
+                <p className="whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-[15px]">
                   {selectedFasilitas.deskripsi || 'Belum ada deskripsi lengkap untuk fasilitas ini.'}
                 </p>
               </div>
 
-              {selectedFasilitas.latitude && selectedFasilitas.longitude && (
-                <div className="pt-2">
+              {selectedFasilitas.latitude != null && selectedFasilitas.longitude != null && (
+                <div className="border-t border-emerald-950/10 pt-5">
                   <a
-                    href={`https://maps.google.com/?q=${selectedFasilitas.latitude},${selectedFasilitas.longitude}`}
+                    href={mapsUrl(selectedFasilitas)}
                     target="_blank"
-                    rel="noreferrer"
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-3 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-teal-600/20 transition-all"
+                    rel="noopener noreferrer"
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#0b2e28] px-5 text-sm font-bold text-emerald-200 transition hover:bg-[#10574a]"
                   >
-                    <Navigation className="w-4 h-4" />
-                    <span>Petunjuk Arah Google Maps</span>
+                    <Navigation className="h-4 w-4" />
+                    Petunjuk arah Google Maps
                   </a>
                 </div>
               )}
             </div>
-          </div>
+          </section>
         </div>
       )}
     </div>
