@@ -67,7 +67,7 @@ export default async function AdminBeritaPage() {
                         )}
                         <div>
                           <p className="font-bold text-slate-900 line-clamp-1">{item.judul}</p>
-                          <p className="text-[11px] text-slate-400 line-clamp-1">{item.konten}</p>
+                          <p className="text-[11px] text-slate-400 line-clamp-1">{item.ringkasan}</p>
                         </div>
                       </td>
                       <td className="py-4 px-6">
@@ -75,7 +75,7 @@ export default async function AdminBeritaPage() {
                           {item.kategori}
                         </span>
                       </td>
-                      <td className="py-4 px-6 font-medium text-slate-600">{item.penulis || 'Admin'}</td>
+                      <td className="py-4 px-6 font-medium text-slate-600">{'Admin'}</td>
                       <td className="py-4 px-6 text-slate-500 text-[11px]">
                         {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>

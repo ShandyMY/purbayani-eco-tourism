@@ -320,14 +320,20 @@ export async function POST(request: Request) {
     // --- UMKM STEP 6: SAVE TO DATABASE ---
     if (session.step === 'UMKM_WAITING_CONFIRMATION') {
       if (incomingMessage.toLowerCase() === 'ya') {
-        await prisma.umkm.create({
+                await prisma.umkm.create({
           data: {
             nama: session.tempUmkmNama || 'UMKM Purbayani',
             kategori: session.tempUmkmKategori || 'Lainnya',
             deskripsi: session.tempUmkmDeskripsi || '-',
             kontak: session.tempUmkmKontak,
-            latitude: session.tempUmkmLat,
-            longitude: session.tempUmkmLng,
+            latitude:
+              session.tempUmkmLat && session.tempUmkmLat.trim() !== ''
+                ? Number(session.tempUmkmLat)
+                : null,
+            longitude:
+              session.tempUmkmLng && session.tempUmkmLng.trim() !== ''
+                ? Number(session.tempUmkmLng)
+                : null,
           },
         });
 

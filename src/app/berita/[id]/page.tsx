@@ -11,6 +11,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { Prisma } from '@prisma/client';
 
 export const revalidate = 0;
 
@@ -64,15 +65,10 @@ function Wave({ fill, className, anim }: { fill: string; className?: string; ani
 export default async function DetailBeritaPage({ params }: DetailBeritaPageProps) {
   const { id } = await params;
 
-  let berita = null;
-  let beritaLainnya: (NonNullable<typeof berita> & {
-    id: string;
-    judul: string;
-    gambar: string | null;
-    createdAt: Date;
-    tanggal: string | null;
-    kategori: string | null;
-  })[] = [];
+  type BeritaItem = Prisma.BeritaGetPayload<object>;
+
+let berita: BeritaItem | null = null;
+let beritaLainnya: BeritaItem[] = [];
 
   try {
     berita = await prisma.berita.findUnique({

@@ -49,7 +49,20 @@ function Wave({ fill, className, anim }: { fill: string; className?: string; ani
 }
 
 export default async function WisataPublicPage() {
-  let dataWisata: Awaited<ReturnType<typeof prisma.wisata.findMany>> = [];
+  type WisataItem = {
+  id: string;
+  nama: string;
+  kategori: string;
+  deskripsi: string;
+  lokasi: string | null;
+  jamOperasional: string | null;
+  hargaTiket: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  gambar: string | null;
+};
+
+let dataWisata: WisataItem[] = [];
 
   try {
     dataWisata = await prisma.wisata.findMany({

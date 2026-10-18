@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 interface UmkmItem {
-  id: string;
+  id: string | number;
   nama: string;
   kategori?: string | null;
   deskripsi: string;

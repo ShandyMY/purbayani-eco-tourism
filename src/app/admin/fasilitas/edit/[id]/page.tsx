@@ -54,7 +54,7 @@ export default async function EditFasilitasPage({ params }: { params: Promise<{ 
               <label className="text-xs font-bold text-slate-700">Kategori <span className="text-rose-500">*</span></label>
               <select
                 name="kategori"
-                defaultValue={fasilitas.kategori}
+                defaultValue={fasilitas.kategori ?? ''}
                 required
                 className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition"
               >

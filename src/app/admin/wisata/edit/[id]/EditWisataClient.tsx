@@ -25,8 +25,8 @@ interface EditWisataClientProps {
     gambar: string | null;
     virtualTourFile?: string | null;
     virtualTourUrl?: string | null;
-    latitude: string | null;
-    longitude: string | null;
+    latitude: number | null;
+    longitude: number | null;
     deskripsi: string | null;
   };
 }
@@ -80,7 +80,9 @@ export default function EditWisataClient({ wisata }: EditWisataClientProps) {
   };
 
   // Bind ID ke Server Action
-  const updateWisataWithId = updateWisata.bind(null, wisata.id);
+const updateWisataWithId = async (formData: FormData): Promise<void> => {
+  await updateWisata(wisata.id, formData);
+};
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 p-6 md:p-12">

@@ -1,41 +1,23 @@
-
 import { PrismaClient } from '@prisma/client';
-import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
+
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-  if (!connectionString) {
-    throw new Error('DATABASE_URL belum diatur di file .env');
-  }
-
-  const dbUrl = new URL(connectionString);
-
-  const adapter = new PrismaMariaDb({
-    host: dbUrl.hostname,
-    port: Number(dbUrl.port || 3306),
-    user: decodeURIComponent(dbUrl.username),
-    password: decodeURIComponent(dbUrl.password),
-    database: dbUrl.pathname.slice(1),
-    connectionLimit: 5,
-  });
-
-  return new PrismaClient({
-    adapter,
-    log:
-      process.env.NODE_ENV === 'development'
-        ? ['query', 'error', 'warn']
-        : ['error'],
-  });
-}
+const adapter = new PrismaPg(pool);
 
 export const prisma =
-  globalForPrisma.prisma ?? createPrismaClient();
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

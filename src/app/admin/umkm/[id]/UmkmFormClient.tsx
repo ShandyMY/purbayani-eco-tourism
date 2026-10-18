@@ -31,7 +31,7 @@ interface UmkmData {
 
 interface UmkmFormClientProps {
   umkm?: UmkmData;
-  formAction: (formData: FormData) => Promise<void>;
+  formAction: (formData: FormData) => Promise<{ error: string } | void>;
   submitButtonText?: string;
 }
 
@@ -40,6 +40,9 @@ export default function UmkmFormClient({
   formAction,
   submitButtonText = 'Simpan Data UMKM',
 }: UmkmFormClientProps) {
+    const handleFormAction = async (formData: FormData): Promise<void> => {
+    await formAction(formData);
+  };
   const initialKategori = umkm?.kategori || KATEGORI_OPTIONS[0];
   const isInitialCustom = !KATEGORI_OPTIONS.includes(initialKategori) && !!umkm?.kategori;
 
@@ -76,7 +79,7 @@ export default function UmkmFormClient({
 
   return (
     <form
-      action={formAction}
+      action={handleFormAction}
       className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5"
     >
       {umkm?.id && <input type="hidden" name="id" value={umkm.id} />}

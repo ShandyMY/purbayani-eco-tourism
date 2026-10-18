@@ -15,7 +15,7 @@ import {
 import Image from 'next/image';
 
 interface FasilitasItem {
-  id: string;
+  id: string | number;
   nama: string;
   kategori?: string | null;
   deskripsi: string;

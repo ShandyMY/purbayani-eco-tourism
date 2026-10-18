@@ -18,7 +18,9 @@ export default async function EditWisataPage({ params }: EditWisataPageProps) {
     notFound();
   }
 
-  const updateWisataWithId = updateWisata.bind(null, wisata.id);
+  const updateWisataWithId = async (formData: FormData): Promise<void> => {
+  await updateWisata(wisata.id, formData);
+};
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
